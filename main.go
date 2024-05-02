@@ -2,10 +2,9 @@ package main
 
 import (
 	"context"
-	//"encoding/json"
+	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -21,6 +20,49 @@ const name = "nostr-alert"
 const version = "0.0.1"
 
 var revision = "HEAD"
+
+type payload struct {
+	Alerts []struct {
+		Annotations struct {
+			Summary string `json:"summary"`
+		} `json:"annotations"`
+		DashboardURL string `json:"dashboardURL"`
+		EndsAt       string `json:"endsAt"`
+		Fingerprint  string `json:"fingerprint"`
+		GeneratorURL string `json:"generatorURL"`
+		Labels       struct {
+			Alertname string `json:"alertname"`
+			Instance  string `json:"instance"`
+		} `json:"labels"`
+		PanelURL    string      `json:"panelURL"`
+		SilenceURL  string      `json:"silenceURL"`
+		StartsAt    string      `json:"startsAt"`
+		Status      string      `json:"status"`
+		ValueString string      `json:"valueString"`
+		Values      interface{} `json:"values"`
+	} `json:"alerts"`
+	CommonAnnotations struct {
+		Summary string `json:"summary"`
+	} `json:"commonAnnotations"`
+	CommonLabels struct {
+		Alertname string `json:"alertname"`
+		Instance  string `json:"instance"`
+	} `json:"commonLabels"`
+	ExternalURL string `json:"externalURL"`
+	GroupKey    string `json:"groupKey"`
+	GroupLabels struct {
+		Alertname string `json:"alertname"`
+		Instance  string `json:"instance"`
+	} `json:"groupLabels"`
+	Message         string `json:"message"`
+	OrgID           int64  `json:"orgId"`
+	Receiver        string `json:"receiver"`
+	State           string `json:"state"`
+	Status          string `json:"status"`
+	Title           string `json:"title"`
+	TruncatedAlerts int64  `json:"truncatedAlerts"`
+	Version         string `json:"version"`
+}
 
 func doPost(rh string, pk string, u string, content string) error {
 	var sk string
@@ -79,12 +121,15 @@ func doPost(rh string, pk string, u string, content string) error {
 func handler(rh string, pk string) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		u := r.URL.Query().Get("u")
-		b, err := io.ReadAll(r.Body)
+
+		var p payload
+		err := json.NewDecoder(r.Body).Decode(&p)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		err = doPost(rh, pk, u, string(b))
+		content := p.Title + "\n" + p.Message
+		err = doPost(rh, pk, u, content)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
