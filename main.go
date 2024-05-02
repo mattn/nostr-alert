@@ -150,9 +150,9 @@ func main() {
 		os.Exit(0)
 	}
 
-	nsec := os.Getenv("NULLPOGA_NSEC")
+	nsec := os.Getenv("SENDER_NSEC")
 	if nsec == "" {
-		log.Fatal("NULLPOGA_NSEC is not set")
+		log.Fatal("SENDER_NSEC is not set")
 	}
 
 	http.HandleFunc("POST /", handler(rh, nsec))
